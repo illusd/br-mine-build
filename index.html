@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MineBuild</title>
+  <style>
+    @import url('https://fonts.cdnfonts.com/css/minecraft-3');
+    
+    body {
+      margin: 0; padding: 0; background: #ffffff; color: #000000;
+      font-family: 'Minecraft', monospace; font-smooth: never;
+      -webkit-font-smoothing: none;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; text-align: center; }
+    header { margin-bottom: 30px; }
+    .logo { width: 280px; height: auto; display: block; margin: 0 auto 15px; }
+    h1 { font-size: 52px; margin: 10px 0; }
+    .btn {
+      background: #000; color: #fff; padding: 12px 24px; border: none; font-size: 18px;
+      cursor: pointer; margin: 10px; font-family: 'Minecraft', monospace;
+    }
+    .btn:hover { background: #333; }
+    form { background: #f0f0f0; padding: 25px; border-radius: 10px; max-width: 500px; margin: 20px auto; text-align: left; }
+    input, select { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; }
+    .result { background: #fff; padding: 20px; border: 3px solid #000; margin: 30px auto; max-width: 800px; text-align: left; border-radius: 10px; }
+    .materials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+    .material-item { border: 2px solid #000; padding: 10px; text-align: center; }
+    .material-item img { width: 64px; height: 64px; }
+    .step { margin: 15px 0; padding: 10px; background: #f8f8f8; border-left: 5px solid #000; }
+    .madeby { position: fixed; bottom: 20px; right: 20px; font-size: 14px; }
+    .modal {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: white; border: 5px solid #000; padding: 30px; width: 500px; text-align: center; z-index: 100;
+    }
+    .modal.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="https://raw.githubusercontent.com/illusd-com/frwt/refs/heads/main/MINE%20BUILD_20260812_175629_0000.png" alt="MineBuild Logo" class="logo">
+      <h1>MineBuild</h1>
+    </header>
+
+    <button class="btn" onclick="document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })">BuildNow</button>
+
+    <div id="form-section">
+      <form id="build-form">
+        <label>你想製作的機器或建築等：<input type="text" id="purpose" placeholder="例如：終界風暴建築" required></label>
+        <label>建造的模式：
+          <select id="mode">
+            <option value="創造">創造</option>
+            <option value="生存">生存</option>
+            <option value="生存(極限)">生存(極限)</option>
+          </select>
+        </label>
+        <label>世界種子碼（非必填）：<input type="text" id="seed"></label>
+        <label>分析模式：
+          <select id="analysis">
+            <option value="SuperMini">SuperMini</option>
+            <option value="QuickBuild">QuickBuild</option>
+            <option value="LimiCons">LimiCons</option>
+          </select>
+        </label>
+        <button type="button" class="btn" onclick="analyzeBuild()">分析</button>
+      </form>
+    </div>
+
+    <div id="result" class="result" style="display:none;">
+      <h2>AI 分析結果</h2>
+      <div id="ai-result"></div>
+      <div id="materials-list" class="materials-grid"></div>
+      <div id="steps-list"></div>
+    </div>
+  </div>
+
+  <div class="madeby">
+    <button class="btn" onclick="window.open('https://github.com/illusd', '_blank')">MadeByIllusdOrg</button>
+  </div>
+
+  <!-- 彈窗 -->
+  <div id="star-modal" class="modal">
+    <h2>為我們 Github 專案給個 Star 吧！謝謝你☺️</h2>
+    <button class="btn" onclick="openGithub()">前往Github專案</button>
+    <button class="btn" onclick="closeModal()">真的嗎  拜託麻</button>
+    <button class="btn" onclick="closeModal()">好！</button>
+  </div>
+
+  <script>
+    function analyzeBuild() {
+      const purpose = document.getElementById('purpose').value;
+      const mode = document.getElementById('mode').value;
+      const seed = document.getElementById('seed').value;
+      const analysis = document.getElementById('analysis').value;
+
+      let apiUrl = "https://free.v36.cm/v1/chat/completions";
+      const apiKey = "YOUR_API_KEY_HERE"; // 請在 Vercel 環境變數中設定 VITE_API_KEY
+
+      // 模擬 3 種模式（因為 free.v36.cm 沒有 gpt-5.6-luna）
+      const promptMap = {
+        "SuperMini": "用最少材料，快速分析",
+        "QuickBuild": "快速分析，優化效率",
+        "LimiCons": "分析到極致，運用更多材料更新到極致"
+      };
+
+      const prompt = `你是一名minecraft 基岩建造/機器規劃者
+用途：${purpose}
+下面是其他資料，請依照目前的模式（必要）或種子碼（非必要）生成資料
+模式：${mode}
+種子碼：${seed || '無'}
+${promptMap[analysis] || '快速分析'}
+
+請你使用${analysis}來分析
+請將您分析結果將機器/建築優化到極致，用最少材料`;
+
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }]
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const result = document.getElementById('result');
+        document.getElementById('ai-result').innerHTML = `<p>${data.choices[0].message.content}</p>`;
+        result.style.display = 'block';
+
+        // 模擬材料與步驟（可替換成真材質查詢）
+        const materialsHTML = `<div class="material-item"><img src="https://zh.minecraft.wiki/images/thumb/Grass_Block.png/64px-Grass_Block.png">草方塊 x25</div>
+        <div class="material-item"><img src="https://zh.minecraft.wiki/images/thumb/Dirt.png/64px-Dirt.png">土塊 x10</div>`;
+        document.getElementById('materials-list').innerHTML = materialsHTML;
+
+        const stepsHTML = `<div class="step">1. 準備草方塊</div><div class="step">2. 放置土塊</div>`;
+        document.getElementById('steps-list').innerHTML = stepsHTML;
+
+        // 彈窗
+        document.getElementById('star-modal').classList.add('show');
+      })
+      .catch(err => alert('API 呼叫失敗，請檢查 Key'));
+    }
+
+    function openGithub() { window.open('https://github.com/illusd/br-mine-build', '_blank'); }
+    function closeModal() { document.getElementById('star-modal').classList.remove('show'); }
+  </script>
+</body>
+</html>
