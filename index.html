@@ -6,34 +6,33 @@
   <title>MineBuild</title>
   <style>
     @import url('https://fonts.cdnfonts.com/css/minecraft-3');
-    
-    body {
-      margin: 0; padding: 0; background: #ffffff; color: #000000;
-      font-family: 'Minecraft', monospace; font-smooth: never;
-      -webkit-font-smoothing: none;
-    }
+    body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Minecraft', monospace; font-smooth: never; }
     .container { max-width: 1100px; margin: 0 auto; padding: 20px; text-align: center; }
     header { margin-bottom: 30px; }
-    .logo { width: 280px; height: auto; display: block; margin: 0 auto 15px; }
+    .logo { width: 280px; height: auto; display: block; margin: 0 auto 15px; animation: spin 8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     h1 { font-size: 52px; margin: 10px 0; }
-    .btn {
-      background: #000; color: #fff; padding: 12px 24px; border: none; font-size: 18px;
-      cursor: pointer; margin: 10px; font-family: 'Minecraft', monospace;
-    }
-    .btn:hover { background: #333; }
+    .intro { font-size: 18px; max-width: 800px; margin: 20px auto; color: #333; opacity: 0; transform: translateY(20px); animation: fadeInUp 1.5s forwards; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .btn { background: #000; color: #fff; padding: 12px 24px; border: none; font-size: 18px; cursor: pointer; margin: 10px; font-family: 'Minecraft', monospace; transition: transform 0.2s; }
+    .btn:hover { background: #333; transform: scale(1.05); }
     form { background: #f0f0f0; padding: 25px; border-radius: 10px; max-width: 500px; margin: 20px auto; text-align: left; }
     input, select { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; }
-    .result { background: #fff; padding: 20px; border: 3px solid #000; margin: 30px auto; max-width: 800px; text-align: left; border-radius: 10px; }
+    .result { background: #fff; padding: 20px; border: 3px solid #000; margin: 30px auto; max-width: 800px; text-align: left; border-radius: 10px; opacity: 0; transform: translateY(30px); transition: all 0.6s; }
+    .result.show { opacity: 1; transform: translateY(0); }
     .materials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-    .material-item { border: 2px solid #000; padding: 10px; text-align: center; }
+    .material-item { border: 2px solid #000; padding: 10px; text-align: center; transform: scale(0.8); transition: transform 0.5s; }
+    .material-item.show { transform: scale(1); }
     .material-item img { width: 64px; height: 64px; }
-    .step { margin: 15px 0; padding: 10px; background: #f8f8f8; border-left: 5px solid #000; }
-    .madeby { position: fixed; bottom: 20px; right: 20px; font-size: 14px; }
-    .modal {
-      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: white; border: 5px solid #000; padding: 30px; width: 500px; text-align: center; z-index: 100;
-    }
+    .step { margin: 15px 0; padding: 10px; background: #f8f8f8; border-left: 5px solid #000; opacity: 0; transform: translateX(-30px); transition: all 0.6s; }
+    .step.show { opacity: 1; transform: translateX(0); }
+    .model-info { font-size: 14px; color: #666; margin-top: 10px; }
+    .madeby { position: fixed; bottom: 20px; right: 20px; font-size: 14px; color: #000; text-decoration: none; font-family: 'Minecraft', monospace; }
+    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 5px solid #000; padding: 30px; width: 500px; text-align: center; z-index: 100; animation: modalPop 0.4s forwards; }
+    @keyframes modalPop { from { transform: translate(-50%, -80%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
     .modal.show { display: block; }
+    .loading { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   </style>
 </head>
 <body>
@@ -41,6 +40,10 @@
     <header>
       <img src="https://raw.githubusercontent.com/illusd-com/frwt/refs/heads/main/MINE%20BUILD_20260812_175629_0000.png" alt="MineBuild Logo" class="logo">
       <h1>MineBuild</h1>
+      <p class="intro">
+        MINE BUILD 是 AI 驅動的 Minecraft 基岩版建造材料準備助理。<br>
+        完全開源、MIT 授權，幫助你快速規劃機器與建築，優化材料使用到極致。
+      </p>
     </header>
 
     <button class="btn" onclick="document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })">BuildNow</button>
@@ -67,19 +70,17 @@
       </form>
     </div>
 
-    <div id="result" class="result" style="display:none;">
+    <div id="result" class="result">
       <h2>AI 分析結果</h2>
+      <div id="model-info"></div>
       <div id="ai-result"></div>
       <div id="materials-list" class="materials-grid"></div>
       <div id="steps-list"></div>
     </div>
   </div>
 
-  <div class="madeby">
-    <button class="btn" onclick="window.open('https://github.com/illusd', '_blank')">MadeByIllusdOrg</button>
-  </div>
+  <a href="https://github.com/illusd" class="madeby" target="_blank">MadeByIllusdOrg</a>
 
-  <!-- 彈窗 -->
   <div id="star-modal" class="modal">
     <h2>為我們 Github 專案給個 Star 吧！謝謝你☺️</h2>
     <button class="btn" onclick="openGithub()">前往Github專案</button>
@@ -95,9 +96,8 @@
       const analysis = document.getElementById('analysis').value;
 
       let apiUrl = "https://free.v36.cm/v1/chat/completions";
-      const apiKey = "YOUR_API_KEY_HERE"; // 請在 Vercel 環境變數中設定 VITE_API_KEY
+      const apiKey = "YOUR_API_KEY_HERE"; // 請在 Vercel 環境變數設定
 
-      // 模擬 3 種模式（因為 free.v36.cm 沒有 gpt-5.6-luna）
       const promptMap = {
         "SuperMini": "用最少材料，快速分析",
         "QuickBuild": "快速分析，優化效率",
@@ -111,7 +111,6 @@
 種子碼：${seed || '無'}
 ${promptMap[analysis] || '快速分析'}
 
-請你使用${analysis}來分析
 請將您分析結果將機器/建築優化到極致，用最少材料`;
 
       fetch(apiUrl, {
@@ -128,18 +127,43 @@ ${promptMap[analysis] || '快速分析'}
       .then(r => r.json())
       .then(data => {
         const result = document.getElementById('result');
-        document.getElementById('ai-result').innerHTML = `<p>${data.choices[0].message.content}</p>`;
-        result.style.display = 'block';
+        result.classList.add('show');
 
-        // 模擬材料與步驟（可替換成真材質查詢）
+        const usedModel = data.model || "gpt-4o-mini";
+        document.getElementById('model-info').innerHTML = `<p><strong>已使用模型：</strong> ${usedModel} <span style="color:#666;">(免費版可用模型)</span></p>`;
+
+        const aiResult = document.getElementById('ai-result');
+        aiResult.innerHTML = '';
+        let content = data.choices[0].message.content;
+        let i = 0;
+
+        const typing = setInterval(() => {
+          if (i < content.length) {
+            aiResult.innerHTML += content[i];
+            aiResult.scrollTop = aiResult.scrollHeight;
+            i++;
+          } else {
+            clearInterval(typing);
+          }
+        }, 40);
+
+        // 材料動畫
         const materialsHTML = `<div class="material-item"><img src="https://zh.minecraft.wiki/images/thumb/Grass_Block.png/64px-Grass_Block.png">草方塊 x25</div>
         <div class="material-item"><img src="https://zh.minecraft.wiki/images/thumb/Dirt.png/64px-Dirt.png">土塊 x10</div>`;
-        document.getElementById('materials-list').innerHTML = materialsHTML;
+        const matList = document.getElementById('materials-list');
+        matList.innerHTML = materialsHTML;
+        setTimeout(() => {
+          document.querySelectorAll('.material-item').forEach((el, i) => setTimeout(() => el.classList.add('show'), i * 300));
+        }, 800);
 
+        // 步驟動畫
         const stepsHTML = `<div class="step">1. 準備草方塊</div><div class="step">2. 放置土塊</div>`;
-        document.getElementById('steps-list').innerHTML = stepsHTML;
+        const stepList = document.getElementById('steps-list');
+        stepList.innerHTML = stepsHTML;
+        setTimeout(() => {
+          document.querySelectorAll('.step').forEach((el, i) => setTimeout(() => el.classList.add('show'), i * 400));
+        }, 1200);
 
-        // 彈窗
         document.getElementById('star-modal').classList.add('show');
       })
       .catch(err => alert('API 呼叫失敗，請檢查 Key'));
