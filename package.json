@@ -1,0 +1,11 @@
+{
+  "name": "br-mine-build",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
