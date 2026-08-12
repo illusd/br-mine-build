@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MineBuild — 你的基岩版建築 / 機器規劃師</title>
+<link rel="icon" href="https://raw.githubusercontent.com/illusd-com/frwt/refs/heads/main/MINE%20BUILD_20260812_175629_0000.png" />
+<link href="https://fonts.cdnfonts.com/css/minecraft-4" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#1c1c1c;
+    --grass:#5c9c3d;
+    --grass-dark:#3f7328;
+    --dirt:#8a5a2e;
+    --stone:#8a8a8a;
+    --stone-dark:#5a5a5a;
+    --gold:#f4c542;
+    --panel:#f5f5f0;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Minecraft','Segoe UI',sans-serif;
+    line-height:1.6;
+  }
+  img{image-rendering:pixelated;}
+
+  /* pixel button style shared by all buttons */
+  .pixel-btn{
+    font-family:inherit;
+    font-size:15px;
+    padding:12px 22px;
+    border:none;
+    cursor:pointer;
+    color:#fff;
+    background:var(--grass);
+    box-shadow:
+      inset 3px 3px 0 rgba(255,255,255,.35),
+      inset -3px -3px 0 rgba(0,0,0,.35);
+    letter-spacing:.5px;
+    transition:transform .05s ease;
+  }
+  .pixel-btn:active{ transform: translateY(2px); }
+  .pixel-btn.secondary{ background:var(--stone); }
+  .pixel-btn.dirt{ background:var(--dirt); }
+  .pixel-btn.ghost{
+    background:transparent;
+    color:var(--ink);
+    border:2px solid var(--stone);
+    box-shadow:none;
+  }
+
+  /* header */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 5vw;
+    border-bottom:4px solid var(--stone-dark);
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:20;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand img{ width:40px; height:40px; }
+  .brand span{ font-size:22px; letter-spacing:1px; }
+
+  /* hero */
+  .hero{
+    padding:80px 8vw 60px;
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:40px;
+    align-items:center;
+  }
+  .hero h1{
+    font-size:clamp(32px,5vw,56px);
+    margin:0 0 18px;
+    line-height:1.15;
+  }
+  .hero h1 .hl{ color:var(--grass-dark); }
+  .hero p{ font-size:17px; color:#444; max-width:520px; }
+  .hero-visual{
+    background:var(--panel);
+    border:4px solid var(--stone-dark);
+    padding:24px;
+    box-shadow:6px 6px 0 rgba(0,0,0,.15);
+  }
+  .hero-visual img{ width:100%; display:block; }
+
+  /* example blocks section */
+  .examples{ padding:40px 8vw 90px; }
+  .examples h2{ font-size:26px; margin-bottom:28px; }
+  .example-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:22px;
+  }
+  .example-card{
+    background:var(--panel);
+    border:3px solid var(--stone-dark);
+    padding:20px;
+  }
+  .example-card .tag{
+    display:inline-block;
+    background:var(--gold);
+    color:#3a2b00;
+    font-size:12px;
+    padding:3px 8px;
+    margin-bottom:10px;
+  }
+  .example-card h3{ margin:0 0 8px; font-size:18px; }
+  .example-card p{ margin:0; font-size:14px; color:#555; }
+
+  footer{
+    padding:30px 8vw;
+    border-top:4px solid var(--stone-dark);
+    text-align:center;
+    background:var(--panel);
+  }
+  footer a{
+    color:var(--stone-dark);
+    text-decoration:none;
+    font-size:14px;
+    letter-spacing:.5px;
+  }
+  footer a:hover{ color:var(--grass-dark); }
+
+  /* modal overlay shared */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--bg);
+    border:4px solid var(--stone-dark);
+    box-shadow:8px 8px 0 rgba(0,0,0,.25);
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:28px;
+    position:relative;
+  }
+  .modal h2{ margin-top:0; font-size:22px; }
+  .modal-close{
+    position:absolute; top:14px; right:14px;
+    background:var(--stone); color:#fff; border:none;
+    width:30px; height:30px; cursor:pointer; font-size:16px;
+  }
+  label{ display:block; font-size:13px; margin:16px 0 6px; color:#333; }
+  input[type=text], select, textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:14px;
+    padding:10px;
+    border:2px solid var(--stone);
+    background:#fff;
+    color:var(--ink);
+  }
+  textarea{ min-height:70px; resize:vertical; }
+  .form-actions{ margin-top:22px; display:flex; gap:10px; }
+
+  /* result area */
+  #resultBody{ font-size:14px; }
+  .result-block{ margin-bottom:22px; }
+  .result-block h3{
+    font-size:16px;
+    border-left:5px solid var(--grass);
+    padding-left:10px;
+    margin-bottom:10px;
+  }
+  .material-list, .step-list{ list-style:none; padding:0; margin:0; }
+  .material-list li{
+    display:flex; justify-content:space-between;
+    padding:8px 10px; border-bottom:1px dashed #ddd; font-size:14px;
+  }
+  .step-item{
+    background:var(--panel);
+    border:2px solid var(--stone);
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .step-item h4{ margin:0 0 6px; font-size:14px; }
+  .step-item p{ margin:0 0 8px; font-size:13px; color:#444; }
+  .block-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#fff; border:1px solid var(--stone);
+    padding:3px 8px; margin:2px 4px 2px 0; font-size:12px;
+    text-decoration:none; color:var(--ink);
+  }
+  .block-chip img{ width:16px; height:16px; }
+
+  .loading{ text-align:center; padding:30px 0; font-size:14px; color:#555; }
+  .error-box{
+    background:#fdeaea; border:2px solid #d9534f; color:#8a1f1f;
+    padding:12px; font-size:13px; margin-bottom:14px;
+  }
+
+  .chat-box{ margin-top:20px; border-top:2px solid #eee; padding-top:16px; }
+  .chat-log{ max-height:180px; overflow-y:auto; margin-bottom:10px; font-size:13px; }
+  .chat-log .me{ color:var(--grass-dark); margin:6px 0; }
+  .chat-log .ai{ color:#333; margin:6px 0; }
+  .chat-input-row{ display:flex; gap:8px; }
+  .chat-input-row input{ flex:1; }
+
+  .star-modal{ max-width:380px; text-align:center; }
+  .star-modal p{ font-size:16px; margin:10px 0 22px; }
+  .star-modal .btn-row{ display:flex; flex-direction:column; gap:10px; }
+
+  @media (max-width: 780px){
+    .hero{ grid-template-columns:1fr; padding:50px 6vw 40px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img src="https://raw.githubusercontent.com/illusd-com/frwt/refs/heads/main/MINE%20BUILD_20260812_175629_0000.png" alt="MineBuild logo" />
+    <span>MineBuild</span>
+  </div>
+  <button class="pixel-btn" id="openBuildBtn">BuildNow</button>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>把腦中的<span class="hl">機器與建築</span><br/>變成一份可以照著蓋的圖紙</h1>
+    <p>MineBuild 是完全開源、免費的基岩版建造規劃助手。告訴我們你想蓋什麼、你目前的模式與世界種子碼，AI 會幫你整理出材料清單與逐步教學，附上對應的方塊 ID。</p>
+    <button class="pixel-btn dirt" id="openBuildBtn2" style="margin-top:22px;">開始建造 · BuildNow</button>
+  </div>
+  <div class="hero-visual">
+    <img src="https://raw.githubusercontent.com/illusd-com/frwt/refs/heads/main/MINE%20BUILD_20260812_175629_0000.png" alt="MineBuild" />
+  </div>
+</section>
+
+<section class="examples">
+  <h2>範例</h2>
+  <div class="example-grid">
+    <div class="example-card">
+      <span class="tag">生存模式</span>
+      <h3>全自動甘蔗農場</h3>
+      <p>使用活塞與紅石比較器，收集甘蔗並自動送入儲存箱，材料需求極低。</p>
+    </div>
+    <div class="example-card">
+      <span class="tag">創造模式</span>
+      <h3>浮空城堡瞭望塔</h3>
+      <p>以石磚與雲杉木交錯堆疊，搭配旗幟裝飾，適合展示型建築。</p>
+    </div>
+    <div class="example-card">
+      <span class="tag">生存(極限)</span>
+      <h3>簡易刷石機</h3>
+      <p>只需水桶與熔岩桶即可產生無限圓石來源，新手也能快速上手。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="https://github.com/illusd" target="_blank" rel="noopener">MadeByIllusdOrg</a>
+</footer>
+
+<!-- Build form modal -->
+<div class="overlay" id="buildOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeBuildBtn">✕</button>
+    <h2>BuildNow</h2>
+    <form id="buildForm">
+      <label for="goal">你想製作的機器或建築等</label>
+      <textarea id="goal" required placeholder="例如：全自動甘蔗農場"></textarea>
+
+      <label for="buildMode">建造的模式</label>
+      <select id="buildMode">
+        <option value="創造">創造</option>
+        <option value="生存">生存</option>
+        <option value="生存(極限)">生存(極限)</option>
+      </select>
+
+      <label for="seed">世界種子碼（非必填）</label>
+      <input type="text" id="seed" placeholder="留空亦可" />
+
+      <label for="analysisMode">分析模式</label>
+      <select id="analysisMode">
+        <option value="SuperMini">SuperMini — 最少材料，優化到極致</option>
+        <option value="QuickBuild">QuickBuild — 快速分析</option>
+        <option value="LimiCons">LimiCons — 運用更多材料，分析到極致</option>
+      </select>
+
+      <div class="form-actions">
+        <button type="submit" class="pixel-btn">分析</button>
+        <button type="button" class="pixel-btn ghost" id="cancelBuildBtn">取消</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Result modal -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeResultBtn">✕</button>
+    <h2>分析結果</h2>
+    <div id="resultBody"></div>
+  </div>
+</div>
+
+<!-- Star modal -->
+<div class="overlay" id="starOverlay">
+  <div class="modal star-modal" id="starModalInner">
+    <p id="starText">為我們Github專案給個Star吧　謝謝你☺️</p>
+    <div class="btn-row" id="starBtnRow">
+      <button class="pixel-btn" id="starGoBtn">前往Github專案</button>
+      <button class="pixel-btn ghost" id="starNoBtn">不用了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WIKI_BASE = "https://zh.minecraft.wiki/w/";
+
+const buildOverlay = document.getElementById('buildOverlay');
+const resultOverlay = document.getElementById('resultOverlay');
+const starOverlay = document.getElementById('starOverlay');
+
+function openModal(el){ el.classList.add('show'); }
+function closeModal(el){ el.classList.remove('show'); }
+
+document.getElementById('openBuildBtn').onclick = () => openModal(buildOverlay);
+document.getElementById('openBuildBtn2').onclick = () => openModal(buildOverlay);
+document.getElementById('closeBuildBtn').onclick = () => closeModal(buildOverlay);
+document.getElementById('cancelBuildBtn').onclick = () => closeModal(buildOverlay);
+document.getElementById('closeResultBtn').onclick = () => closeModal(resultOverlay);
+
+let conversationHistory = [];
+
+document.getElementById('buildForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const goal = document.getElementById('goal').value.trim();
+  const buildMode = document.getElementById('buildMode').value;
+  const seed = document.getElementById('seed').value.trim();
+  const analysisMode = document.getElementById('analysisMode').value;
+
+  closeModal(buildOverlay);
+  openModal(resultOverlay);
+  const body = document.getElementById('resultBody');
+  body.innerHTML = '<div class="loading">正在分析中，請稍候…</div>';
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal, buildMode, seed, analysisMode })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      body.innerHTML = `<div class="error-box">分析失敗：${escapeHtml(data.error || '未知錯誤')}</div>`;
+      return;
+    }
+
+    let parsed;
+    try {
+      const cleaned = data.content.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (err) {
+      // fallback: show raw text if not valid JSON
+      body.innerHTML = `<div class="result-block"><h3>分析結果</h3><p style="white-space:pre-wrap">${escapeHtml(data.content)}</p></div>` + chatBoxHtml();
+      conversationHistory = [
+        { role: 'user', content: `用途：${goal}\n模式：${buildMode}\n種子碼：${seed || '無'}` },
+        { role: 'assistant', content: data.content }
+      ];
+      bindChat();
+      return;
+    }
+
+    renderResult(parsed);
+    conversationHistory = [
+      { role: 'user', content: `用途：${goal}\n模式：${buildMode}\n種子碼：${seed || '無'}` },
+      { role: 'assistant', content: data.content }
+    ];
+    bindChat();
+    setTimeout(() => openModal(starOverlay), 600);
+
+  } catch (err) {
+    body.innerHTML = `<div class="error-box">連線錯誤：${escapeHtml(err.message)}</div>`;
+  }
+});
+
+function renderResult(parsed){
+  const body = document.getElementById('resultBody');
+  let html = '';
+
+  if (parsed.summary){
+    html += `<div class="result-block"><h3>總覽</h3><p>${escapeHtml(parsed.summary)}</p></div>`;
+  }
+
+  if (Array.isArray(parsed.materials) && parsed.materials.length){
+    html += `<div class="result-block"><h3>材料清單</h3><ul class="material-list">`;
+    for (const m of parsed.materials){
+      html += `<li>${blockChip(m.name, m.id)}<span>${escapeHtml(m.count || '')}</span></li>`;
+    }
+    html += `</ul></div>`;
+  }
+
+  if (Array.isArray(parsed.steps) && parsed.steps.length){
+    html += `<div class="result-block"><h3>建造步驟</h3>`;
+    parsed.steps.forEach((s, i) => {
+      html += `<div class="step-item"><h4>步驟 ${i+1}：${escapeHtml(s.title || '')}</h4><p>${escapeHtml(s.detail || '')}</p>`;
+      if (Array.isArray(s.blocks) && s.blocks.length){
+        html += `<div>` + s.blocks.map(b => blockChip(b)).join('') + `</div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += chatBoxHtml();
+  body.innerHTML = html;
+}
+
+function blockChip(name, id){
+  const label = name || id || '未知方塊';
+  const wikiUrl = WIKI_BASE + encodeURIComponent(label);
+  return `<a class="block-chip" href="${wikiUrl}" target="_blank" rel="noopener">🧱 ${escapeHtml(label)}${id ? ` <small style="color:#888">(${escapeHtml(id)})</small>` : ''}</a>`;
+}
+
+function chatBoxHtml(){
+  return `
+  <div class="chat-box">
+    <h3 style="font-size:14px;margin-bottom:8px;">還有問題嗎？（自由發問，不套用固定格式）</h3>
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="輸入你的問題…" />
+      <button class="pixel-btn secondary" id="chatSendBtn">送出</button>
+    </div>
+  </div>`;
+}
+
+function bindChat(){
+  const sendBtn = document.getElementById('chatSendBtn');
+  const input = document.getElementById('chatInput');
+  if (!sendBtn) return;
+  sendBtn.onclick = sendChat;
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+}
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const log = document.getElementById('chatLog');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  log.innerHTML += `<div class="me">你：${escapeHtml(text)}</div>`;
+  log.scrollTop = log.scrollHeight;
+  conversationHistory.push({ role: 'user', content: text });
+
+  log.innerHTML += `<div class="ai" id="pendingAi">MineBuild：思考中…</div>`;
+  log.scrollTop = log.scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: conversationHistory })
+    });
+    const data = await res.json();
+    const pending = document.getElementById('pendingAi');
+    if (!res.ok){
+      pending.textContent = 'MineBuild：發生錯誤 — ' + (data.error || '未知錯誤');
+      return;
+    }
+    pending.textContent = 'MineBuild：' + data.content;
+    conversationHistory.push({ role: 'assistant', content: data.content });
+    log.scrollTop = log.scrollHeight;
+  } catch(err){
+    const pending = document.getElementById('pendingAi');
+    pending.textContent = 'MineBuild：連線錯誤';
+  }
+}
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, (m) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+// Star modal flow
+document.getElementById('closeResultBtn').addEventListener('click', () => {});
+document.getElementById('starGoBtn').onclick = () => {
+  window.open('https://github.com/illusd/br-mine-build', '_blank');
+};
+document.getElementById('starNoBtn').onclick = () => {
+  const inner = document.getElementById('starModalInner');
+  inner.innerHTML = `
+    <p>真的嗎　拜託麻</p>
+    <div class="btn-row">
+      <button class="pixel-btn" id="starYesBtn2">好！</button>
+      <button class="pixel-btn ghost" id="starCloseBtn2">關閉</button>
+    </div>`;
+  document.getElementById('starYesBtn2').onclick = () => {
+    window.open('https://github.com/illusd/br-mine-build', '_blank');
+  };
+  document.getElementById('starCloseBtn2').onclick = () => {
+    closeModal(starOverlay);
+  };
+};
+</script>
+</body>
+</html>
