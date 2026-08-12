@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model: 'gpt-5.6-luna', messages }),
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages }),
     });
 
     if (!response.ok) {
